@@ -1,0 +1,36 @@
+# Render deployment (EPIC 0.2).
+#
+# Docker, not a native Python runtime, because Tesseract is a SYSTEM binary that
+# pip cannot install. The Dockerfile installs it and verifies it at build time,
+# so a missing OCR engine fails the build instead of appearing in week 7.
+#
+# Deploy: push to GitHub, then New > Blueprint and point Render at this file.
+#
+# Free-tier facts to verify in EPIC 0.4 rather than assume:
+#   - The instance spins down after ~15 min idle; the next request pays a cold
+#     start. Measure it before promising a sub-second dashboard.
+#   - Memory is 512MB. scikit-learn + pandas + PyMuPDF fit; torch does not,
+#     which is why TECH_SPEC 3.6 cut sentence-transformers.
+#   - Background tasks die on spin-down, so documents can stick in `processing`.
+#     That is what `documents.retry_count` is for.
+
+services:
+  - type: web
+    name: lastbenchiq-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

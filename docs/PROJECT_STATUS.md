@@ -3,7 +3,7 @@
 > Updated after every EPIC (Step 8 of the workflow: maintain the feedback loop).
 > Future sessions read this first to know where things stand.
 
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-11 (EPIC 0.1 complete)
 
 ---
 
@@ -27,7 +27,7 @@
 
 | EPIC | Week | State |
 |---|---|---|
-| 0 Walking skeleton & real data | 1 | 🟡 partially done by the scaffold — DB, deploy, measurement and paper collection remain |
+| 0 Walking skeleton & real data | 1 | 🟡 code complete — **0.1 database done**, 0.2–0.4 configs + script ready, awaiting your hosting accounts. 0.5 papers **done** (318 questions) |
 | 1 Identity & profile | 2 | ⬜ |
 | 2 Upload & extraction | 2 | ⬜ |
 | 3 Segmentation ⚠ | 3 | ⬜ |

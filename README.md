@@ -71,3 +71,20 @@ Routers validate and delegate.
 The backend ships as a container because **Tesseract is a system binary, not a pip
 package** — see `backend/Dockerfile`. The build verifies it is present rather than
 discovering it is missing in production.
+
+| Tier | Host | Config |
+|---|---|---|
+| Database | Neon (free) | copy the connection string into Render's `DATABASE_URL` |
+| API | Render (free, Docker) | `render.yaml` — New → Blueprint |
+| Web | Vercel (free) | `vercel.json`; set `VITE_API_BASE_URL` to the Render URL |
+
+After deploying, run the measurement script before building any feature:
+
+```bash
+python backend/scripts/measure_free_tier.py --url https://<your-api>.onrender.com
+```
+
+It checks that every heavy dependency, the Tesseract binary and the database are
+actually present, then measures latency against the NFRs. **A `degraded` result
+means the free tier cannot carry this dependency tree — find that out now, not in
+week 7.** Record the numbers in `docs/KNOWLEDGE_BASE.md` §6.

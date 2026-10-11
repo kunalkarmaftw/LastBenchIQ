@@ -12,6 +12,8 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from app.core.db import check_connection
+
 router = APIRouter(tags=["health"])
 
 _HEAVY_DEPENDENCIES = ("sklearn", "pandas", "numpy", "fitz", "pytesseract")
@@ -27,8 +29,17 @@ def health_deep() -> dict[str, Any]:
     """Report what is genuinely installed, so deploy problems surface in week 1."""
     packages = {name: importlib.util.find_spec(name) is not None for name in _HEAVY_DEPENDENCIES}
     tesseract_path = shutil.which("tesseract")
-    return {
-        "status": "ok" if all(packages.values()) else "degraded",
+    db_ok, db_error = check_connection()
+
+    healthy = all(packages.values()) and tesseract_path is not None and db_ok
+    body: dict[str, Any] = {
+        "status": "ok" if healthy else "degraded",
         "packages": packages,
         "tesseract_binary": tesseract_path or "MISSING",
+        "database": "connected" if db_ok else "unreachable",
     }
+    if db_error:
+        # Surfaced deliberately: a deploy that cannot reach its database should
+        # say why, not just report "degraded" and leave you guessing.
+        body["database_error"] = db_error
+    return body

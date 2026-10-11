@@ -1,7 +1,11 @@
 /** Thin fetch wrapper. Every call goes through here so auth, errors and the
  *  base URL have exactly one definition. */
 
-const BASE_URL = '/api/v1';
+// In dev, Vite proxies /api to localhost:8000 (see vite.config.ts).
+// In production there is no proxy, so the deployed API URL must be injected
+// at build time via VITE_API_BASE_URL. Falling back to the relative path keeps
+// local development working with no .env file.
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1`;
 
 export class ApiError extends Error {
   constructor(
