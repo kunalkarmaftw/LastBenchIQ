@@ -29,3 +29,8 @@ ml/models/*.pkl
 
 # os
 .DS_Store
+
+# raw papers and rendered pages are not committed
+ml/data/raw_papers/**/*.pdf
+ml/data/raw_papers/**/*.png
+ml/data/raw_papers/**/ocr_*.txt
