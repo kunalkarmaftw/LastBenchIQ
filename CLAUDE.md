@@ -141,6 +141,9 @@ All of these run in CI on every push. Run them locally before committing.
 | Profile incomplete | Agent asks the student to complete it — **never predicts from nulls** |
 | LLM rate-limited | Back off, show a human message, keep cached results usable |
 | A tool fails mid-agent-run | Agent observes the failure and re-plans; it does not hang |
+| **No past papers for a subject** | State the limit plainly. Offer syllabus structure, teaching-hour weighting and generated practice. **Never invent a ranking**, and never borrow another subject's questions to fake one |
+| Page is a scan with a text layer | Distrust the text. Image coverage > 80% means scan (`FINDINGS_EXTRACTION §2`) |
+| Uploaded paper's course code mismatches the subject | Warn the student; do not silently mix it into ranking |
 
 Reporting a marks percentage computed from missing marks is the product lying to a
 student the night before an exam. Degrade visibly.
