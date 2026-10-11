@@ -13,6 +13,11 @@ React + Vite + Tailwind · FastAPI + SQLAlchemy · PostgreSQL · scikit-learn
 
 ## Quick start
 
+> **Python 3.11 or 3.12 is required** (`py -3.11 -m venv .venv` on Windows).
+> The Dockerfile and CI both run 3.11, and the pinned scientific packages only
+> ship prebuilt wheels for released Python versions — on a newer interpreter pip
+> tries to compile them from source and fails. Match production locally.
+
 ```bash
 # 1. database
 docker compose up -d db
