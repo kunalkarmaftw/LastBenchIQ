@@ -1,0 +1,138 @@
+name: CI
+
+# The gate. Every rule here is a constraint that validates generated code
+# automatically, so review effort goes to design instead of to typos.
+# A failing check is information, not an obstacle — do not weaken a rule to go green.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lastbench
+          POSTGRES_PASSWORD: lastbench
+          POSTGRES_DB: lastbenchiq_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # Tesseract is a system binary. Installing it here means CI matches the
+      # Dockerfile, and tier-2 OCR is actually exercised rather than skipped.
+      - name: Install Tesseract
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        working-directory: backend
+        run: ruff check .
+
+      - name: Format check (ruff)
+        working-directory: backend
+        run: ruff format --check .
+
+      - name: Type check (mypy, strict)
+        working-directory: backend
+        run: mypy app
+
+      - name: Tests
+        working-directory: backend
+        env:
+          ENVIRONMENT: ci
+          DATABASE_URL: postgresql+psycopg://lastbench:lastbench@localhost:5432/lastbenchiq_test
+        run: pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint (eslint)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Type check (tsc, strict)
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Component tests (vitest)
+        working-directory: frontend
+        run: npm test
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if a .env file was committed
+        run: |
+          if git ls-files --error-unmatch '*.env' 2>/dev/null | grep -v '.env.example'; then
+            echo "::error::A .env file is committed. Remove it and rotate the secrets."
+            exit 1
+          fi
+          echo "No committed .env files."

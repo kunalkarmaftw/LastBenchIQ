@@ -1,0 +1,16 @@
+# Local Postgres only. Production uses Neon.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lastbench
+      POSTGRES_PASSWORD: lastbench
+      POSTGRES_DB: lastbenchiq
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lastbench"]
+      interval: 5s
+      retries: 5
+volumes:
+  pgdata:
