@@ -1,7 +1,12 @@
 [project]
 name = "lastbenchiq-backend"
 version = "0.1.0"
-requires-python = ">=3.11"
+# Upper bound is deliberate. The Dockerfile and CI both run 3.11, and the
+# pinned scientific packages (scikit-learn, pillow, numpy) only publish
+# prebuilt wheels for released Python versions. On a newer interpreter pip
+# falls back to building from source and dies in meson with an unreadable
+# error. This bound turns that into a clear message instead.
+requires-python = ">=3.11,<3.13"
 
 # ----------------------------------------------------------------------------
 # Ruff — linting + formatting. Deliberately strict.
@@ -64,6 +69,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers --cov=app --cov-report=term-missing"
+# Silences a pytest-asyncio deprecation warning. "function" is the default it
+# is warning about not being set explicitly; naming it keeps the suite quiet
+# and pins the behaviour when the library changes its default.
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "unit: isolated logic, no database",
     "api: endpoint tests through the FastAPI test client",

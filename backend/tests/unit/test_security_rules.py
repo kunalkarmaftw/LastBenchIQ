@@ -6,20 +6,58 @@ that lives only in a markdown file erodes; a rule with a failing test does not.
 """
 
 import pytest
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import Settings
-from app.models.base import TimestampMixin, UserOwnedMixin
+from app.models.base import IDMixin, TimestampMixin, UserOwnedMixin
 
 pytestmark = pytest.mark.unit
 
 
-def test_user_owned_mixin_provides_user_id() -> None:
-    """Step 3 audit: user-owned tables must carry user_id, not rely on a join."""
-    assert hasattr(UserOwnedMixin, "user_id")
+class _TestBase(DeclarativeBase):
+    """Isolated metadata, so these fixtures never reach Alembic autogenerate."""
 
 
-def test_timestamp_mixin_provides_created_at() -> None:
-    assert hasattr(TimestampMixin, "created_at")
+class _OwnedThing(_TestBase, IDMixin, TimestampMixin, UserOwnedMixin):
+    """A throwaway model that uses the mixins, so we can inspect the real table.
+
+    Earlier this file asserted `hasattr(UserOwnedMixin, "user_id")`. That passed,
+    but it tested the wrong thing (attribute presence on an unmapped class, which
+    SQLAlchemy warns about) rather than the thing that matters: does a table built
+    from this mixin actually get the column, and with the right constraints?
+    """
+
+    __tablename__ = "owned_things"
+
+
+def test_user_owned_mixin_adds_a_user_id_column() -> None:
+    """Step 3 audit: user-owned tables carry user_id, not a join to find it."""
+    assert "user_id" in _OwnedThing.__table__.columns
+
+
+def test_user_id_is_not_nullable() -> None:
+    """A nullable owner is a row nobody owns - and nobody filters out."""
+    assert _OwnedThing.__table__.columns["user_id"].nullable is False
+
+
+def test_user_id_is_indexed() -> None:
+    """Every query filters on user_id, so it must be indexed."""
+    assert _OwnedThing.__table__.columns["user_id"].index is True
+
+
+def test_user_id_cascades_on_user_delete() -> None:
+    """Deleting a user must not strand their rows."""
+    fks = list(_OwnedThing.__table__.columns["user_id"].foreign_keys)
+    assert len(fks) == 1
+    assert fks[0].ondelete == "CASCADE"
+    # `target_fullname` is the declared string. Using `.column` instead would
+    # try to resolve the real `users` table, which does not exist in this
+    # isolated metadata - that is the point of isolating it.
+    assert fks[0].target_fullname == "users.id"
+
+
+def test_timestamp_mixin_adds_created_at() -> None:
+    assert "created_at" in _OwnedThing.__table__.columns
 
 
 def test_production_rejects_the_development_secret() -> None:
