@@ -1,0 +1,431 @@
+<title>LastBenchIQ Study Planner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+  /* Layout: app shell — sticky header with subject switcher, stat strip, tabbed panels. */
+  :root {
+    --paper:#f6f7f9; --panel:#fff; --raise:#fbfcfd;
+    --ink:#141821; --dim:#5a6172; --faint:#8a92a4;
+    --rule:#e0e4ea; --accent:#2f4bd4; --accent-soft:#eaedfb;
+    --warn:#a9631a; --warn-soft:#fdf2e3; --good:#1f6d47;
+    --bA:#2f4bd4; --bB:#6c7ba8; --bC:#aeb6c6; --track:#e6e9f2;
+    --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --serif:"Newsreader",ui-serif,Georgia,serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#0d1016; --panel:#151922; --raise:#1b2029;
+    --ink:#e9ecf3; --dim:#9aa3b5; --faint:#6d7689;
+    --rule:#262c38; --accent:#8ba2ff; --accent-soft:#1d2440;
+    --warn:#e0a85a; --warn-soft:#2a2113; --good:#6fc79b;
+    --bA:#8ba2ff; --bB:#5c6party; --bB:#5c6a94; --bC:#3b445c; --track:#242b3a;
+    color-scheme:dark;}}
+  :root[data-theme="dark"]{
+    --paper:#0d1016; --panel:#151922; --raise:#1b2029;
+    --ink:#e9ecf3; --dim:#9aa3b5; --faint:#6d7689;
+    --rule:#262c38; --accent:#8ba2ff; --accent-soft:#1d2440;
+    --warn:#e0a85a; --warn-soft:#2a2113; --good:#6fc79b;
+    --bA:#8ba2ff; --bB:#5c6a94; --bC:#3b445c; --track:#242b3a;
+    color-scheme:dark;}
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+  p{margin:0}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  .wrap{max-width:1060px;margin-inline:auto;padding-inline:18px;padding-block:0 64px}
+
+  /* header */
+  .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);
+       border-bottom:1px solid var(--rule);padding-block:14px 0;margin-bottom:0}
+  .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .brand h1{font-size:1.22rem;letter-spacing:-.015em}
+  .brand .tagline{font-size:.78rem;color:var(--dim)}
+  .subjects{display:flex;gap:4px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+  .subjects::-webkit-scrollbar{display:none}
+  .subj{padding:8px 13px;border-radius:7px 7px 0 0;font-size:.86rem;white-space:nowrap;
+        color:var(--dim);border-bottom:2px solid transparent}
+  .subj[aria-selected="true"]{color:var(--ink);font-weight:500;border-bottom-color:var(--accent);background:var(--panel)}
+  .subj:hover:not([aria-selected="true"]){color:var(--ink)}
+  .subj .n{font-family:var(--mono);font-size:.7rem;color:var(--faint);margin-left:6px}
+
+  /* stat strip */
+  .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr));
+         gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;
+         overflow:hidden;margin-top:22px}
+  .cell{background:var(--panel);padding:13px 15px}
+  .cell .v{font-family:var(--serif);font-size:1.5rem;line-height:1.1;font-variant-numeric:tabular-nums}
+  .cell .k{font-size:.74rem;color:var(--dim);margin-top:3px}
+
+  /* headline */
+  .hero{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--accent);
+        border-radius:8px;padding:22px 24px;margin-top:16px}
+  .hero .big{font-family:var(--serif);font-weight:400;letter-spacing:-.02em;
+             font-size:clamp(1.35rem, 1rem + 1.7vw, 1.95rem);line-height:1.2}
+  .hero .big em{font-style:normal;color:var(--accent)}
+  .hero .sub{margin-top:8px;color:var(--dim);font-size:.86rem}
+
+  /* tabs */
+  .tabs{display:flex;gap:2px;margin-top:26px;border-bottom:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:9px 14px;font-size:.87rem;color:var(--dim);border-bottom:2px solid transparent;white-space:nowrap}
+  .tab[aria-selected="true"]{color:var(--ink);font-weight:500;border-bottom-color:var(--ink)}
+  .tab:hover:not([aria-selected="true"]){color:var(--ink)}
+  .panel{margin-top:20px}
+
+  .note{color:var(--dim);font-size:.87rem;max-width:66ch}
+  .sec-t{font-size:.95rem;margin-bottom:4px}
+
+  /* topic rows */
+  .topics{display:grid;gap:5px;margin-top:16px}
+  .trow{background:var(--panel);border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+  .thead{display:grid;grid-template-columns:auto minmax(0,1fr) 7.5rem auto;gap:12px;
+         align-items:center;padding:11px 14px;width:100%;text-align:left}
+  .thead:hover{background:var(--raise)}
+  .pill{font-family:var(--mono);font-size:.7rem;font-weight:600;color:#fff;
+        width:1.5rem;height:1.5rem;border-radius:5px;display:grid;place-items:center}
+  .pA{background:var(--bA)} .pB{background:var(--bB)} .pC{background:var(--bC)}
+  .tname{min-width:0;font-size:.89rem}
+  .tunit{font-family:var(--mono);font-size:.66rem;color:var(--faint);display:block;margin-top:1px}
+  .tbarwrap{display:flex;align-items:center;gap:8px}
+  .tbar{flex:1;height:7px;background:var(--track);border-radius:4px;overflow:hidden;min-width:0}
+  .tfill{height:100%;border-radius:4px}
+  .tshare{font-family:var(--mono);font-size:.74rem;color:var(--dim);
+          font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tmeta{font-family:var(--mono);font-size:.72rem;color:var(--faint);white-space:nowrap}
+  .tbody{border-top:1px solid var(--rule);padding:12px 14px;background:var(--raise)}
+  .qitem{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:baseline;
+         font-size:.83rem;padding:6px 0;border-bottom:1px dashed var(--rule)}
+  .qitem:last-child{border-bottom:0}
+  .qyr,.qmk{font-family:var(--mono);font-size:.72rem;color:var(--faint);white-space:nowrap}
+  .qmk{color:var(--accent)}
+  @media (max-width:620px){
+    .thead{grid-template-columns:auto minmax(0,1fr) auto;gap:9px}
+    .tbarwrap{grid-column:1/-1}
+  }
+
+  /* excluded */
+  .ex{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--warn);
+      border-radius:7px;padding:13px 15px;margin-top:8px}
+  .ex-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{font-family:var(--mono);font-size:.66rem;font-weight:600;background:var(--warn-soft);
+        color:var(--warn);padding:3px 7px;border-radius:4px;white-space:nowrap}
+  .ex-q{margin-top:7px;font-size:.86rem}
+  .ex-why{margin-top:5px;font-size:.78rem;color:var(--dim)}
+
+  /* search */
+  .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  input[type=search],select{font:inherit;font-size:.86rem;padding:8px 11px;border-radius:7px;
+    border:1px solid var(--rule);background:var(--panel);color:var(--ink)}
+  input[type=search]{flex:1;min-width:11rem}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .count{font-family:var(--mono);font-size:.75rem;color:var(--faint);margin-top:12px}
+  .qlist{display:grid;gap:5px;margin-top:8px}
+  .qcard{background:var(--panel);border:1px solid var(--rule);border-radius:7px;padding:11px 14px}
+  .qcard-top{display:flex;flex-wrap:wrap;gap:7px;align-items:center;
+             font-family:var(--mono);font-size:.71rem;color:var(--faint)}
+  .qcard-top .tp{color:var(--accent)}
+  .qcard p{margin-top:6px;font-size:.86rem}
+
+  /* units */
+  .units{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:10px;margin-top:16px}
+  .unit{background:var(--panel);border:1px solid var(--rule);border-radius:7px;padding:13px 15px}
+  .unit .u{font-family:var(--mono);font-size:.7rem;color:var(--accent);font-weight:600}
+  .unit .t{font-size:.85rem;margin-top:4px}
+  .unit .h{font-size:.74rem;color:var(--dim);margin-top:6px}
+
+  /* empty state */
+  .empty{background:var(--panel);border:1px dashed var(--rule);border-radius:8px;
+         padding:28px 24px;margin-top:16px;text-align:center}
+  .empty .ic{font-family:var(--serif);font-size:1.6rem;color:var(--faint)}
+  .empty h3{margin-top:8px;font-size:1rem}
+  .empty p{margin-top:8px;color:var(--dim);font-size:.87rem;max-width:52ch;margin-inline:auto}
+  .avail{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:16px}
+  .av{font-size:.76rem;padding:5px 10px;border-radius:999px;border:1px solid var(--rule)}
+  .av.yes{color:var(--good)} .av.no{color:var(--faint);text-decoration:line-through}
+
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
+         font-size:.78rem;color:var(--faint);max-width:72ch}
+</style>
+
+<div class="top">
+  <div class="wrap" style="padding-block:0">
+    <div class="brand">
+      <h1>LastBenchIQ</h1>
+      <span class="tagline">What to study first, from your own past papers</span>
+    </div>
+    <div class="subjects" role="tablist" id="subjects"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="strip" id="strip"></div>
+  <div id="hero"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="panel" id="panel"></div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script id="bundle" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('bundle').textContent);
+  const SUBJECTS = DATA.subjects;
+  let si = 0;              // selected subject
+  let tab = 'plan';        // plan | excluded | questions | syllabus
+  let open = new Set();    // expanded topics
+  let q = '', yr = 'all';
+
+  const $ = id => document.getElementById(id);
+  const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
+  const pct = n => (n * 100).toFixed(1) + '%';
+  const fm = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
+
+  /* ---------- subject tabs ---------- */
+  function drawSubjects() {
+    const host = $('subjects'); host.textContent = '';
+    SUBJECTS.forEach((s, i) => {
+      const b = el('button', 'subj');
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', i === si ? 'true' : 'false');
+      b.appendChild(document.createTextNode(s.name));
+      b.appendChild(el('span', 'n', s.has_papers ? s.papers + 'p' : 'new'));
+      b.onclick = () => { si = i; tab = 'plan'; open = new Set(); q = ''; yr = 'all'; render(); };
+      host.appendChild(b);
+    });
+  }
+
+  /* ---------- stat strip ---------- */
+  function drawStrip(s) {
+    const host = $('strip'); host.textContent = '';
+    const cells = s.has_papers
+      ? [[String(s.papers), 'Past papers'],
+         [String(s.questions), 'Questions'],
+         [s.years[0] + '–' + s.years[1], 'Years covered'],
+         [String(s.topics.length), 'Topics found'],
+         [fm(s.total_marks), 'Marks analysed']]
+      : [['0', 'Past papers'],
+         [String(s.units.length), 'Units'],
+         [String(s.syllabus_topics.length), 'Syllabus topics'],
+         [String(s.units.reduce((a, u) => a + u.hours, 0)), 'Teaching hours']];
+    cells.forEach(([v, k]) => {
+      const c = el('div', 'cell');
+      c.append(el('div', 'v', v), el('div', 'k', k));
+      host.appendChild(c);
+    });
+  }
+
+  /* ---------- hero ---------- */
+  function drawHero(s) {
+    const host = $('hero'); host.textContent = '';
+    if (!s.has_papers) return;
+    const box = el('div', 'hero');
+    const big = el('div', 'big');
+    big.appendChild(document.createTextNode(s.band_a_count + ' topics carry '));
+    big.appendChild(el('em', null, pct(s.band_a_share)));
+    big.appendChild(document.createTextNode(' of the marks'));
+    const sub = el('div', 'sub',
+      'Ranked from ' + s.questions + ' questions across ' + s.papers + ' papers (' +
+      s.years[0] + '–' + s.years[1] + '), after removing ' + s.off_syllabus.length +
+      ' question' + (s.off_syllabus.length === 1 ? '' : 's') + ' no longer on the syllabus.');
+    box.append(big, sub);
+    host.appendChild(box);
+  }
+
+  /* ---------- tabs ---------- */
+  function drawTabs(s) {
+    const host = $('tabs'); host.textContent = '';
+    const defs = s.has_papers
+      ? [['plan', 'Study plan'],
+         ['excluded', 'Syllabus check (' + s.off_syllabus.length + ')'],
+         ['questions', 'All questions (' + s.questions + ')'],
+         ['syllabus', 'Syllabus']]
+      : [['syllabus', 'Syllabus']];
+    if (!defs.some(d => d[0] === tab)) tab = defs[0][0];
+    defs.forEach(([id, label]) => {
+      const b = el('button', 'tab', label);
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', id === tab ? 'true' : 'false');
+      b.onclick = () => { tab = id; render(); };
+      host.appendChild(b);
+    });
+  }
+
+  /* ---------- study plan ---------- */
+  function panelPlan(s, host) {
+    host.append(
+      el('h2', 'sec-t', 'Topics ranked by marks offered'),
+      el('p', 'note', 'Band A covers the first 60% of marks, B the next 25%, C the rest. ' +
+        'Open any topic to see the questions that were actually asked on it.'));
+
+    const max = Math.max(...s.topics.map(t => t.marks));
+    const list = el('div', 'topics');
+    s.topics.forEach(t => {
+      const row = el('div', 'trow');
+      const head = el('button', 'thead');
+      head.setAttribute('aria-expanded', open.has(t.topic) ? 'true' : 'false');
+
+      head.appendChild(el('span', 'pill p' + t.band, t.band));
+      const nm = el('div', 'tname');
+      nm.appendChild(document.createTextNode(t.topic));
+      nm.appendChild(el('span', 'tunit', t.unit + ' · ' + t.years.join(', ')));
+      head.appendChild(nm);
+
+      const bw = el('div', 'tbarwrap');
+      const bar = el('div', 'tbar');
+      const fill = el('div', 'tfill');
+      fill.style.width = (t.marks / max * 100).toFixed(1) + '%';
+      fill.style.background = 'var(--b' + t.band + ')';
+      bar.appendChild(fill);
+      bw.append(bar, el('span', 'tshare', pct(t.share)));
+      head.appendChild(bw);
+      head.appendChild(el('span', 'tmeta', fm(t.marks) + ' mk · ' + t.count + 'Q'));
+
+      head.onclick = () => { open.has(t.topic) ? open.delete(t.topic) : open.add(t.topic); render(); };
+      row.appendChild(head);
+
+      if (open.has(t.topic)) {
+        const body = el('div', 'tbody');
+        const qs = s.questions_list.filter(x => x.topic === t.topic)
+                                   .sort((a, b) => b.year - a.year || b.marks - a.marks);
+        qs.forEach(x => {
+          const it = el('div', 'qitem');
+          it.append(el('span', 'qyr', x.year + ' ' + x.q),
+                    el('span', 'qmk', '(' + fm(x.marks) + ')'),
+                    el('span', null, x.text));
+          body.appendChild(it);
+        });
+        row.appendChild(body);
+      }
+      list.appendChild(row);
+    });
+    host.appendChild(list);
+  }
+
+  /* ---------- syllabus check ---------- */
+  function panelExcluded(s, host) {
+    host.append(
+      el('h2', 'sec-t', 'Questions removed from the ranking'),
+      el('p', 'note', 'These appeared in past papers but name something the 2025 syllabus ' +
+        'never mentions. They are shown, not hidden, so you can overrule the call.'));
+
+    if (!s.off_syllabus.length) {
+      const e = el('div', 'empty');
+      e.append(el('div', 'ic', '—'), el('h3', null, 'Nothing excluded'),
+               el('p', null, 'Every question in these papers maps to a topic still on the syllabus.'));
+      host.appendChild(e);
+      return;
+    }
+    const marks = s.off_syllabus.reduce((a, x) => a + x.marks, 0);
+    host.appendChild(el('p', 'count',
+      s.off_syllabus.length + ' questions · ' + fm(marks) + ' marks excluded'));
+
+    [...s.off_syllabus].sort((a, b) => b.marks - a.marks).forEach(x => {
+      const c = el('div', 'ex');
+      const top = el('div', 'ex-top');
+      top.append(el('span', 'qyr', x.year + ' ' + x.q_no + (x.part || '')),
+                 el('span', 'qmk', '(' + fm(x.marks) + ' marks)'));
+      x.unknown.forEach(u => top.appendChild(el('span', 'chip', u)));
+      c.append(top, el('p', 'ex-q', x.text), el('p', 'ex-why', x.reason));
+      host.appendChild(c);
+    });
+  }
+
+  /* ---------- all questions ---------- */
+  function panelQuestions(s, host) {
+    host.append(
+      el('h2', 'sec-t', 'Every question, searchable'),
+      el('p', 'note', 'All ' + s.questions + ' questions read from the original scans, with ' +
+        'marks, year and the topic each was matched to.'));
+
+    const ctr = el('div', 'controls');
+    const search = document.createElement('input');
+    search.type = 'search'; search.id = 'q-search';
+    search.placeholder = 'Search question text…'; search.value = q;
+    search.oninput = e => { q = e.target.value; renderQ(); };
+    const sel = document.createElement('select');
+    sel.id = 'q-year';
+    const years = [...new Set(s.questions_list.map(x => x.year))].sort();
+    [['all', 'All years'], ...years.map(y => [String(y), String(y)])].forEach(([v, l]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = l;
+      if (v === yr) o.selected = true; sel.appendChild(o);
+    });
+    sel.onchange = e => { yr = e.target.value; renderQ(); };
+    ctr.append(search, sel);
+    host.appendChild(ctr);
+
+    const count = el('p', 'count'); host.appendChild(count);
+    const list = el('div', 'qlist'); host.appendChild(list);
+
+    function renderQ() {
+      const needle = q.trim().toLowerCase();
+      const rows = s.questions_list.filter(x =>
+        (yr === 'all' || String(x.year) === yr) &&
+        (!needle || x.text.toLowerCase().includes(needle) || x.topic.toLowerCase().includes(needle)));
+      count.textContent = rows.length + ' of ' + s.questions_list.length + ' questions';
+      list.textContent = '';
+      rows.slice(0, 200).forEach(x => {
+        const c = el('div', 'qcard');
+        const t = el('div', 'qcard-top');
+        t.append(el('span', null, x.year + ' · ' + x.q),
+                 el('span', null, fm(x.marks) + ' marks'),
+                 el('span', 'tp', x.topic), el('span', null, x.unit));
+        c.append(t, el('p', null, x.text));
+        list.appendChild(c);
+      });
+      if (rows.length > 200) list.appendChild(el('p', 'count', 'Showing first 200.'));
+    }
+    renderQ();
+  }
+
+  /* ---------- syllabus ---------- */
+  function panelSyllabus(s, host) {
+    if (!s.has_papers) {
+      const e = el('div', 'empty');
+      e.append(el('div', 'ic', '—'),
+        el('h3', null, 'No past papers exist for this subject yet'),
+        el('p', null, s.name + ' is new this year, so there is no history to rank by. ' +
+          'Rather than invent a priority order, here is what can honestly be offered.'));
+      const av = el('div', 'avail');
+      [['Syllabus structure', 1], ['Teaching-hour weighting', 1], ['Revision notes', 1],
+       ['Generated practice', 1], ['Priority bands', 0], ['% of marks', 0]]
+        .forEach(([l, ok]) => av.appendChild(el('span', 'av ' + (ok ? 'yes' : 'no'), l)));
+      e.appendChild(av);
+      e.appendChild(el('p', null, 'Upload this year’s paper after your exam and ranking unlocks.'));
+      host.appendChild(e);
+    }
+    host.append(el('h2', 'sec-t', 'Syllabus units'),
+      el('p', 'note', s.has_papers
+        ? 'Every question above was matched against these units.'
+        : 'Teaching hours are the only weighting the university itself provides.'));
+    const g = el('div', 'units');
+    s.units.forEach(u => {
+      const c = el('div', 'unit');
+      c.append(el('div', 'u', u.unit), el('div', 't', u.title),
+        el('div', 'h', u.hours + ' teaching hours · ' + u.topic_count + ' topics' +
+          (u.hours_share ? ' · ' + pct(u.hours_share) + ' of the course' : '')));
+      g.appendChild(c);
+    });
+    host.appendChild(g);
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    const s = SUBJECTS[si];
+    drawSubjects(); drawStrip(s); drawHero(s); drawTabs(s);
+    const host = $('panel'); host.textContent = '';
+    if (tab === 'plan') panelPlan(s, host);
+    else if (tab === 'excluded') panelExcluded(s, host);
+    else if (tab === 'questions') panelQuestions(s, host);
+    else panelSyllabus(s, host);
+
+    const foot = $('foot'); foot.textContent = '';
+    foot.appendChild(document.createTextNode(
+      'Every figure comes from question papers read and recorded by hand — 318 questions across 15 papers. ' +
+      'Topic matching uses TF-IDF similarity; the syllabus check uses term presence. ' +
+      'Prototype of the study-plan screen: the pipeline and data are real, the hosted app is still being built.'));
+  }
+
+  render();
+})();
+</script>

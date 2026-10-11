@@ -1,0 +1,432 @@
+<title>LastBenchIQ Progress</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+  /* Layout: single-column report. Prose capped near 68ch; data blocks run full width. */
+  :root {
+    --paper:   #f7f8fa;
+    --panel:   #ffffff;
+    --ink:     #141821;
+    --ink-dim: #5a6172;
+    --rule:    #dfe3ea;
+    --accent:  #2f4bd4;   /* Band A / primary */
+    --warn:    #a9631a;   /* off-syllabus */
+    --bad:     #b3321f;   /* broken assumption */
+    --good:    #1f6d47;   /* verified */
+    --bar:     #2f4bd4;
+    --bar-dim: #c3cbe6;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --serif: "Newsreader", ui-serif, Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0e1117; --panel: #161a23; --ink: #e9ecf3; --ink-dim: #9aa3b5;
+      --rule: #272d3a; --accent: #8ba2ff; --warn: #e0a85a;
+      --bad: #f08a76; --good: #6fc79b; --bar: #8ba2ff; --bar-dim: #2d3550;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e1117; --panel: #161a23; --ink: #e9ecf3; --ink-dim: #9aa3b5;
+    --rule: #272d3a; --accent: #8ba2ff; --warn: #e0a85a;
+    --bad: #f08a76; --good: #6fc79b; --bar: #8ba2ff; --bar-dim: #2d3550;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin-inline: auto; padding-inline: 20px; padding-block: 40px 72px; }
+  .prose { max-width: 68ch; }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 600; }
+  h1 { font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.7rem); letter-spacing: -0.02em; line-height: 1.1; }
+  h2 { font-size: 1.22rem; letter-spacing: -0.01em; }
+  h3 { font-size: .97rem; }
+  p  { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: .69rem; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-dim);
+  }
+
+  /* ---------- header ---------- */
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 22px; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline;
+    margin-top: 14px; font-family: var(--mono); font-size: .76rem; color: var(--ink-dim);
+  }
+  .meta-row b { color: var(--ink); font-weight: 500; }
+
+  section { margin-top: 52px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .sec-num {
+    font-family: var(--serif); font-size: 1.05rem; color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .lede { color: var(--ink-dim); margin-top: 8px; font-size: .95rem; }
+
+  /* ---------- headline ---------- */
+  .headline {
+    background: var(--panel); border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent); border-radius: 6px;
+    padding: 26px 26px 22px; margin-top: 20px;
+  }
+  .big {
+    font-family: var(--serif); font-weight: 400; letter-spacing: -0.02em;
+    font-size: clamp(1.6rem, 1.05rem + 2.3vw, 2.4rem); line-height: 1.18;
+  }
+  .big em { font-style: normal; color: var(--accent); }
+  .big-note { margin-top: 10px; color: var(--ink-dim); font-size: .88rem; }
+
+  /* ---------- bar chart ---------- */
+  .chart { margin-top: 22px; display: grid; gap: 7px; }
+  .bar-row {
+    display: grid; grid-template-columns: minmax(0, 15rem) 1fr auto;
+    gap: 12px; align-items: center;
+  }
+  .bar-label { font-size: .83rem; min-width: 0; overflow-wrap: anywhere; }
+  .bar-unit { font-family: var(--mono); font-size: .66rem; color: var(--ink-dim); display: block; }
+  .bar-track { background: var(--bar-dim); border-radius: 3px; height: 15px; min-width: 0; }
+  .bar-fill { background: var(--bar); border-radius: 3px; height: 100%; }
+  .bar-val {
+    font-family: var(--mono); font-size: .76rem; font-variant-numeric: tabular-nums;
+    color: var(--ink-dim); white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .bar-row { grid-template-columns: 1fr auto; }
+    .bar-track { grid-column: 1 / -1; }
+  }
+
+  /* ---------- table ---------- */
+  .tbl-box { overflow-x: auto; margin-top: 18px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--rule); }
+  th { font-size: .68rem; font-family: var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-dim); font-weight: 500; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .band {
+    font-family: var(--mono); font-size: .7rem; font-weight: 600;
+    display: inline-flex; width: 1.45rem; height: 1.45rem;
+    align-items: center; justify-content: center; border-radius: 4px;
+  }
+  .band-a { background: var(--accent); color: #fff; }
+  .band-b { background: var(--bar-dim); color: var(--ink); }
+
+  /* ---------- callout ---------- */
+  .callout {
+    margin-top: 20px; background: var(--panel);
+    border: 1px solid var(--rule); border-left: 4px solid var(--warn);
+    border-radius: 6px; padding: 22px 24px;
+  }
+  .callout h3 { color: var(--warn); }
+  .q-list { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+  .q-list li {
+    display: grid; grid-template-columns: auto auto 1fr; gap: 11px; align-items: baseline;
+    font-size: .84rem; padding-bottom: 7px; border-bottom: 1px dashed var(--rule);
+  }
+  .q-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .q-yr, .q-mk { font-family: var(--mono); font-size: .75rem; color: var(--ink-dim); white-space: nowrap; }
+  .q-mk { color: var(--warn); }
+
+  /* ---------- stat grid ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: 12px; margin-top: 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 15px 17px; }
+  .stat-n { font-family: var(--serif); font-size: 1.85rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-l { font-size: .79rem; color: var(--ink-dim); margin-top: 6px; }
+
+  /* ---------- findings ---------- */
+  .finding { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 19px 21px; margin-top: 12px; }
+  .f-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+  .tag {
+    font-family: var(--mono); font-size: .64rem; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; padding: 3px 7px; border-radius: 3px; white-space: nowrap;
+  }
+  .t-bad  { background: var(--bad);  color: #fff; }
+  .t-good { background: var(--good); color: #fff; }
+  .t-warn { background: var(--warn); color: #fff; }
+  .f-body { margin-top: 10px; font-size: .89rem; color: var(--ink-dim); }
+  .f-body strong { color: var(--ink); font-weight: 500; }
+  .evidence {
+    margin-top: 12px; font-family: var(--mono); font-size: .76rem;
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 5px;
+    padding: 11px 13px; overflow-x: auto;
+  }
+  .evidence div { white-space: pre; }
+
+  /* ---------- status ---------- */
+  .checks { display: grid; gap: 7px; margin-top: 18px; }
+  .check { display: grid; grid-template-columns: auto 1fr auto; gap: 11px; align-items: baseline; font-size: .87rem; }
+  .dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--good); align-self: center; }
+  .check-v { font-family: var(--mono); font-size: .77rem; color: var(--ink-dim); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: .82rem; color: var(--ink-dim); }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Minor project · BCA · progress review</div>
+    <h1 style="margin-top:10px">LastBenchIQ</h1>
+    <p class="prose" style="margin-top:12px; color:var(--ink-dim)">
+      An AI study companion that reads a student's own past exam papers and tells them
+      which topics actually carry the marks — then checks those topics against this
+      year's syllabus, so nothing removed from the course gets revised by mistake.
+    </p>
+    <div class="meta-row">
+      <span>11 October 2026</span>
+      <span>Papers analysed <b>15</b></span>
+      <span>Questions extracted <b>318</b></span>
+      <span>Subjects <b>4</b></span>
+      <span>Tests passing <b>24</b></span>
+    </div>
+  </header>
+
+  <!-- ============ 1 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">1</span><h2>The core feature, running on real papers</h2></div>
+    <p class="lede prose">
+      Seven Computer Networks papers from 2016–2024 were processed end to end: text
+      extracted, questions separated, topics clustered, and marks aggregated per topic.
+      Every figure below comes from those papers.
+    </p>
+
+    <div class="headline">
+      <div class="big">Twelve topics carry <em>60%</em> of the marks</div>
+      <div class="big-note">
+        Out of 38 topics found across 145 questions. A student revising only Band A covers
+        three-fifths of everything asked in nine years, and can see exactly what they are skipping.
+      </div>
+    </div>
+
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">2</span><h2>Band A — study these first</h2></div>
+    <p class="lede prose">
+      Topics are ranked by marks offered across all seven papers, then split into Pareto
+      bands: A covers the first 60% of marks, B the next 25%, C the remainder.
+    </p>
+    <div class="tbl-box">
+      <table>
+        <thead>
+          <tr><th>Band</th><th>Topic</th><th>Unit</th><th>Marks</th><th>Share</th><th>Qs</th><th>Years asked</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">3</span><h2>What the syllabus check caught</h2></div>
+    <p class="lede prose">
+      Past papers are older than the current syllabus. Matching every question against the
+      2025 syllabus removed 17 questions worth 87 marks from the ranking.
+    </p>
+
+    <div class="callout">
+      <h3>ISDN appears in four papers and is no longer on the course</h3>
+      <p class="f-body" style="margin-top:9px">
+        Five questions worth <strong>32 marks</strong> across 2016, 2017, 2018 and 2019 —
+        including a full 12.5-mark question — ask about ISDN, BRI and PRI reference points.
+        None of it appears anywhere in the 2025 syllabus. A student revising from the paper
+        folder would study all of it and score nothing.
+      </p>
+      <ul class="q-list" id="offlist"></ul>
+    </div>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">4</span><h2>Data collected</h2></div>
+    <p class="lede prose">
+      Every question was read from the original scans by hand and recorded with its marks,
+      year and unit. This is the benchmark the automated pipeline is measured against, and
+      the training set for the question classifier.
+    </p>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">5</span><h2>Assumptions tested against real data</h2></div>
+    <p class="lede prose">
+      Three design assumptions were measured rather than trusted. Two failed, and finding
+      that out in week one rather than week seven is the point of starting with real papers.
+    </p>
+
+    <div class="finding">
+      <div class="f-head"><span class="tag t-bad">Failed</span><h3>OCR cannot read the marks column</h3></div>
+      <div class="f-body">
+        Tesseract destroys exactly the field the whole ranking depends on, and loses roughly
+        half the question references per page. <strong>Vision-based extraction is now the primary
+        path for scans</strong>, not a fallback.
+      </div>
+      <div class="evidence">
+        <div>printed   OCR read</div>
+        <div>(2.5)  →  @5)</div>
+        <div>(5)    →  ©</div>
+        <div>(7.5)  →  as 7</div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="f-head"><span class="tag t-bad">Failed</span><h3>Similarity scoring cannot judge syllabus membership</h3></div>
+      <div class="f-body">
+        TF-IDF similarity was meant to decide whether a question is still on the syllabus. It
+        measures question length, not membership — the scores for an in-syllabus and a removed
+        topic are indistinguishable. <strong>Redesigned into two stages</strong>: similarity for
+        topic assignment, term presence for the off-syllabus decision.
+      </div>
+      <div class="evidence">
+        <div>"Write a short note on Modems"     in syllabus    0.071</div>
+        <div>"Discuss ISDN, its services"       removed        0.069</div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="f-head"><span class="tag t-good">Held</span><h3>The pipeline produces a usable answer</h3></div>
+      <div class="f-body">
+        Extraction → syllabus match → marks aggregation → Pareto banding runs end to end and
+        produces the ranking in section 2, from real papers with no manual tuning per subject.
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="f-head"><span class="tag t-warn">Found</span><h3>Real uploads are messier than expected</h3></div>
+      <div class="f-body">
+        The AI paper set contained <strong>two different courses merged into one file</strong> —
+        41% of those questions belong to a different syllabus. One page was rotated 90° with no
+        rotation recorded in the file. Another subject's pages carried a text layer that looked
+        valid but had its reading order destroyed. All three are now detected rather than
+        silently mis-processed.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">6</span><h2>Engineering status</h2></div>
+    <div class="checks" id="checks"></div>
+    <p class="lede prose" style="margin-top:22px">
+      <strong style="color:var(--ink);font-weight:500">Next:</strong> the student-facing screens
+      that display this analysis, then the two classical ML models — a question classifier trained
+      on the 318 hand-labelled questions, and a placement predictor — followed by the career
+      planning agent.
+    </p>
+  </section>
+
+  <footer>
+    Figures produced by <span style="font-family:var(--mono)">ml/analyse_cn.py</span> over seven
+    Computer Networks papers, 2016–2024. Section 2 is the pipeline's actual output, not a mockup.
+    The student-facing interface is not built yet.
+  </footer>
+</div>
+
+<script>
+  // Pipeline output: ml/data/cn_analysis_result.json
+  const BAND_A = [
+    ["Transport layer functions and protocols", "UNIT-IV", 63.5, .0801, 10, "2016–2024"],
+    ["Error detection and correction methods",  "UNIT-II", 57.5, .0725,  7, "2016–2024"],
+    ["Multiplexing (WDM, TDM, FDM)",            "UNIT-II", 53.0, .0668, 10, "2016–2024"],
+    ["Static and dynamic routing",              "UNIT-III",40.0, .0504,  6, "2016–2024"],
+    ["Connection management",                   "UNIT-IV", 38.5, .0485,  5, "2017–2024"],
+    ["Distance vector protocol",                "UNIT-III",36.5, .0460,  4, "2017–2024"],
+    ["OSI model",                               "UNIT-I",  36.0, .0454,  4, "2017–2024"],
+    ["Presentation layer",                      "UNIT-IV", 34.0, .0429,  4, "2017–2024"],
+    ["Link state protocol",                     "UNIT-III",30.0, .0378,  6, "2016–2023"],
+    ["IPv4 addressing",                         "UNIT-III",30.0, .0378,  4, "2016–2024"],
+    ["Guided transmission media",               "UNIT-I",  28.5, .0359,  4, "2016–2018"],
+    ["Internetworking devices",                 "UNIT-III",26.0, .0328,  4, "2016–2023"]
+  ];
+  const OFF = [
+    [2017, 12.5, "Discuss the following w.r.t ISDN: (a) BRI (b) PRI (c) Different Reference points"],
+    [2024, 10,   "Discuss symmetric and asymmetric encryption techniques"],
+    [2018, 6,    "Define ISDN. What are its various services and layers?"],
+    [2019, 6,    "Discuss ISDN, its services & layers."],
+    [2016, 5,    "What is Broadband ISDN? How BRI and PRI works?"]
+  ];
+  const STATS = [
+    ["15",  "Past papers processed"],
+    ["318", "Questions extracted"],
+    ["4",   "Syllabi mapped"],
+    ["880", "Marks accounted for in CN"]
+  ];
+  const CHECKS = [
+    ["Automated tests passing", "24"],
+    ["Code coverage", "98%"],
+    ["Type checking (mypy strict)", "clean"],
+    ["Linting (ruff, eslint)", "clean"],
+    ["Database schema + migration", "verified up/down"],
+    ["Continuous integration", "running on every push"]
+  ];
+
+  const pct = n => (n * 100).toFixed(1) + "%";
+  const el = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    return e;
+  };
+
+  // --- bar chart, scaled to the largest value ---
+  const maxMarks = Math.max(...BAND_A.map(r => r[2]));
+  const chart = document.getElementById("chart");
+  BAND_A.forEach(([topic, unit, marks, share]) => {
+    const row = el("div", "bar-row");
+    const lab = el("div", "bar-label");
+    lab.appendChild(document.createTextNode(topic));
+    lab.appendChild(el("span", "bar-unit", unit));
+    const track = el("div", "bar-track");
+    const fill = el("div", "bar-fill");
+    fill.style.width = (marks / maxMarks * 100).toFixed(1) + "%";
+    track.appendChild(fill);
+    row.append(lab, track, el("div", "bar-val", pct(share)));
+    chart.appendChild(row);
+  });
+
+  // --- band A table ---
+  const tbody = document.getElementById("tbody");
+  BAND_A.forEach(([topic, unit, marks, share, count, years]) => {
+    const tr = document.createElement("tr");
+    const b = document.createElement("td");
+    b.appendChild(el("span", "band band-a", "A"));
+    tr.appendChild(b);
+    [topic, unit].forEach(v => tr.appendChild(el("td", null, v)));
+    tr.appendChild(el("td", "num", marks.toFixed(1)));
+    tr.appendChild(el("td", "num", pct(share)));
+    tr.appendChild(el("td", "num", String(count)));
+    tr.appendChild(el("td", "num", years));
+    tbody.appendChild(tr);
+  });
+
+  // --- off-syllabus list ---
+  const offlist = document.getElementById("offlist");
+  OFF.forEach(([yr, mk, text]) => {
+    const li = document.createElement("li");
+    li.append(el("span", "q-yr", String(yr)), el("span", "q-mk", "(" + mk + ")"), el("span", null, text));
+    offlist.appendChild(li);
+  });
+
+  // --- stats ---
+  const stats = document.getElementById("stats");
+  STATS.forEach(([n, label]) => {
+    const card = el("div", "stat");
+    card.append(el("div", "stat-n", n), el("div", "stat-l", label));
+    stats.appendChild(card);
+  });
+
+  // --- checks ---
+  const checks = document.getElementById("checks");
+  CHECKS.forEach(([label, value]) => {
+    const row = el("div", "check");
+    row.append(el("span", "dot"), el("span", null, label), el("span", "check-v", value));
+    checks.appendChild(row);
+  });
+</script>

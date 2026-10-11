@@ -34,6 +34,12 @@ class CareerGoal(enum.StrEnum):
 class User(Base, IDMixin, TimestampMixin):
     __tablename__ = "users"
 
+    # The student's university enrollment number is the account's real identity.
+    # Email changes and gets shared; an enrollment number is issued once, is
+    # unique across the university, and is the number a student already knows by
+    # heart. It is what they sign in with.
+    enrollment_number: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(120))

@@ -12,7 +12,10 @@ alembic==1.14.0
 
 # --- auth ---
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+# Required by pydantic's EmailStr. Pydantic does not pull it in itself: without
+# it the app fails at import, not at request time, so it must be pinned here.
+email-validator==2.2.0
 
 # --- documents (EPIC 2: tiered extraction) ---
 pymupdf==1.25.1

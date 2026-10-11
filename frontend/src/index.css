@@ -1,3 +1,579 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===========================================================================
+   LastBenchIQ — dark theme, red accent.
+   Deliberately dark-only: this is the product's identity, not a user setting,
+   so there is no light variant to keep in sync. `color-scheme` tells the
+   browser to render scrollbars and form chrome to match.
+   =========================================================================== */
+:root {
+  color-scheme: dark;
+
+  --bg:        #08080a;
+  --bg-lift:   #0e0e12;
+  --panel:     #121216;
+  --rule:      #24242c;
+  --rule-soft: #1a1a20;
+
+  --ink:  #f3f3f5;
+  --dim:  #9a9aa6;
+  --mute: #6e6e7a;
+
+  /* Two reds, for two jobs. --red is for marks and text on a dark background,
+     where a bright red reads well. --red-deep is for a filled button: white
+     text on --red would land near 4.2:1, under the 4.5:1 readability bar, so
+     the button uses the darker one at ~5.3:1. */
+  --red:       #ff4d4d;
+  --red-deep:  #c42b2b;
+  --red-hover: #d93434;
+  --red-wash:  rgba(255, 77, 77, 0.10);
+  --red-line:  rgba(255, 77, 77, 0.28);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- logo ---------------------------------------------------------------- */
+.logo { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); }
+.logo-word { font-weight: 600; letter-spacing: -0.021em; line-height: 1; }
+.logo-iq { color: var(--red); }
+
+/* ---- auth: two panels on a wide screen, stacked on a phone ---------------- */
+.auth-shell {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ---- moving background ----------------------------------------------------
+   Two dot grids drifting at different speeds for parallax, plus a slow red
+   glow. Animating `background-position` and `transform` only, so the browser
+   can keep this off the main thread; nothing here triggers layout.
+   A mask fades the dots out towards the form, so they never sit behind an
+   input and compete with what someone is typing.
+   --------------------------------------------------------------------------- */
+.dots {
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 77, 77, 0.46) 1px, transparent 1px);
+  background-size: 26px 26px;
+  /* Two pools: a strong one behind the brand side, a fainter one on the right
+     so the form half is not a dead black rectangle. */
+  -webkit-mask-image:
+    radial-gradient(52rem 40rem at 22% 40%, #000 4%, transparent 74%),
+    radial-gradient(44rem 38rem at 82% 62%, rgba(0,0,0,0.82) 0%, transparent 74%);
+  mask-image:
+    radial-gradient(52rem 40rem at 22% 40%, #000 4%, transparent 74%),
+    radial-gradient(44rem 38rem at 82% 62%, rgba(0,0,0,0.82) 0%, transparent 74%);
+  animation: dot-drift 26s linear infinite;
+}
+.dots-far {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.26) 1px, transparent 1px);
+  background-size: 52px 52px;
+  animation-duration: 58s;
+  animation-direction: reverse;
+}
+@keyframes dot-drift {
+  to { background-position: 26px 52px; }
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(38rem 26rem at 16% 30%, var(--red-wash), transparent 68%);
+  animation: glow-breathe 11s ease-in-out infinite;
+}
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.09); }
+}
+
+/* Balances the composition: without it the right half reads as a black void
+   with a card floating in it. Deliberately out of phase with the left glow
+   (a different duration and a negative delay) so the two never pulse together
+   and the page never looks like it is throbbing. */
+.glow-right {
+  background: radial-gradient(36rem 30rem at 84% 66%, rgba(255, 77, 77, 0.14), transparent 68%);
+  animation-duration: 15s;
+  animation-delay: -6s;
+}
+
+/* ---- embers ---------------------------------------------------------------
+   Eight slow sparks rising through the right-hand space. Only `transform` and
+   `opacity` animate, which the compositor handles without touching layout.
+   --------------------------------------------------------------------------- */
+.embers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ember {
+  position: absolute;
+  left: var(--x);
+  bottom: -8px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: var(--red);
+  opacity: 0;
+  box-shadow: 0 0 10px 2px rgba(255, 77, 77, 0.7);
+  animation: ember-rise var(--dur) var(--delay) linear infinite;
+}
+@keyframes ember-rise {
+  0%        { transform: translateY(0) translateX(0); opacity: 0; }
+  12%       { opacity: 0.95; }
+  50%       { transform: translateY(-46vh) translateX(16px); opacity: 0.7; }
+  88%       { opacity: 0.18; }
+  100%      { transform: translateY(-96vh) translateX(-10px); opacity: 0; }
+}
+
+.auth-grid {
+  position: relative;
+  width: 100%;
+  max-width: 62rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+}
+@media (min-width: 60rem) {
+  .auth-grid { grid-template-columns: 1.02fr 1fr; gap: 56px; }
+}
+
+/* ---- brand side ---------------------------------------------------------- */
+.brand-head { display: flex; flex-direction: column; gap: 22px; }
+
+.brand-line {
+  font-size: clamp(1.7rem, 1.15rem + 2.2vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.12;
+  margin: 0;
+  max-width: 17ch;
+}
+.brand-line em { font-style: normal; color: var(--red); }
+
+.brand-sub {
+  color: var(--dim);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 42ch;
+}
+
+/* ---- showcase reel --------------------------------------------------------
+   A fixed height, so a scene change never nudges the layout. Everything
+   inside animates in; nothing animates out, because a scene that fades while
+   the next one arrives reads as a flicker.
+   --------------------------------------------------------------------------- */
+.reel-wrap { margin-top: 4px; }
+
+.reel {
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--red);
+  border-radius: 12px;
+  background: rgba(18, 18, 22, 0.62);
+  backdrop-filter: blur(3px);
+  padding: 18px 20px 14px;
+  max-width: 27rem;
+}
+.reel-stage { min-height: 11rem; display: flex; flex-direction: column; gap: 12px; }
+
+.reel-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+  animation: rise 0.42s ease both;
+}
+.reel-line {
+  margin: auto 0 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--dim);
+  animation: rise 0.5s 0.12s ease both;
+}
+.reel-line b { color: var(--ink); font-weight: 600; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* scene 1 — papers landing one at a time */
+.paper-stack { display: flex; gap: 7px; align-items: flex-end; height: 62px; }
+.paper {
+  width: 30px;
+  height: 42px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #1e1e26, #16161c);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--red);
+  animation: paper-in 0.5s ease both;
+}
+@keyframes paper-in {
+  from { opacity: 0; transform: translateY(-11px) rotate(-5deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* scene 2 — bars growing to their real share of the marks */
+.bars { display: grid; gap: 8px; }
+.bar-row {
+  display: grid;
+  grid-template-columns: 1fr 5.5rem 2.4rem;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.78rem;
+  animation: rise 0.42s ease both;
+}
+.bar-name { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { height: 7px; border-radius: 4px; background: #1c1c23; overflow: hidden; }
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--red-deep), var(--red));
+  transform-origin: left;
+  animation: bar-grow 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.bar-pct { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* scene 3 — the cut */
+.cut { display: flex; align-items: baseline; gap: 16px; padding: 6px 0; }
+.cut-from {
+  font-size: 2.6rem;
+  font-weight: 600;
+  color: var(--mute);
+  text-decoration: line-through;
+  text-decoration-color: var(--red);
+  text-decoration-thickness: 3px;
+  animation: rise 0.45s ease both;
+}
+.cut-arrow { font-size: 1.3rem; color: var(--mute); animation: rise 0.45s 0.18s ease both; }
+.cut-to {
+  font-size: 3.2rem;
+  font-weight: 600;
+  color: var(--red);
+  line-height: 1;
+  animation: pop 0.55s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.74); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* scene 4 — the plan */
+.plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.plan li {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.8rem;
+  padding-left: 11px;
+  border-left: 2px solid var(--red-line);
+  animation: slide-in 0.46s ease both;
+}
+.plan-day { color: var(--red); font-variant-numeric: tabular-nums; }
+.plan-task { color: var(--dim); }
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-9px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* progress dots */
+.reel-dots { display: flex; gap: 6px; margin-top: 14px; }
+.reel-dot {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--rule);
+  transition: background 0.3s ease, width 0.3s ease;
+}
+.reel-dot[data-on="true"] { background: var(--red); width: 26px; }
+
+/* On a phone the brand column shrinks to a line and a single sentence, and
+   the reel goes away entirely — the form is the whole job on a small screen. */
+@media (max-width: 59.99rem) {
+  .brand-line { font-size: 1.6rem; }
+  .reel-wrap { display: none; }
+  .dots, .glow { opacity: 0.6; }
+}
+
+/* Visible to screen readers only: the reel is aria-hidden, so the claims it
+   makes still need to exist as plain text somewhere. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- card ---------------------------------------------------------------- */
+.auth-card {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  /* This is the 1px ring itself: the inner panel sits 1px inside, so whatever
+     shows through here is the border. */
+  background: var(--rule);
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.9), 0 0 54px -12px rgba(255, 77, 77, 0.3);
+}
+
+.card-edge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Square, sized from the card's HEIGHT: a rotating rectangle leaves the
+     corners uncovered, and these cards are always taller than they are wide
+     (sign-up more so than sign-in). Sizing from the long edge covers both. */
+  height: 170%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 170deg,
+    rgba(255, 77, 77, 0.5) 220deg,
+    rgba(255, 215, 215, 1) 272deg,
+    rgba(255, 77, 77, 0.5) 324deg,
+    transparent 356deg 360deg
+  );
+  animation: edge-spin 7.5s linear infinite;
+}
+@keyframes edge-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.auth-card-in {
+  position: relative;
+  margin: 1.5px;
+  border-radius: 14.5px;
+  background: linear-gradient(180deg, var(--bg-lift), var(--panel));
+  padding: 30px 28px 26px;
+}
+
+.card-wrap { position: relative; }
+.card-halo {
+  position: absolute;
+  inset: -70px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 77, 77, 0.20),
+    rgba(255, 77, 77, 0) 26%,
+    rgba(255, 77, 77, 0.15) 50%,
+    rgba(255, 77, 77, 0) 76%,
+    rgba(255, 77, 77, 0.20)
+  );
+  filter: blur(46px);
+  animation: halo-spin 28s linear infinite;
+}
+@keyframes halo-spin { to { transform: rotate(360deg); } }
+
+.auth-title { font-size: 1.32rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.auth-sub { color: var(--dim); font-size: 0.87rem; line-height: 1.55; margin: 9px 0 0; }
+
+/* ---- form ---------------------------------------------------------------- */
+.auth-form { display: grid; gap: 4px; margin-top: 22px; }
+
+.auth-form label {
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-top: 14px;
+}
+
+.auth-form input {
+  font: inherit;
+  font-size: 0.93rem;
+  width: 100%;
+  padding: 11px 13px;
+  color: var(--ink);
+  background: #0a0a0d;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.auth-form input::placeholder { color: #55555f; }
+.auth-form input:hover { border-color: #31313a; }
+.auth-form input:focus-visible {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-wash);
+}
+.auth-form input[aria-invalid="true"] { border-color: var(--red-deep); }
+
+.auth-hint { font-size: 0.75rem; color: var(--mute); line-height: 1.5; margin: 5px 0 0; }
+.auth-hint[data-bad="true"] { color: var(--red); }
+
+/* The row is a sibling of the fields above it, so it carries the gap itself;
+   its own labels then start flush instead of double-spacing. */
+.auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.auth-row label { margin-top: 0; }
+
+.auth-error {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #ffc9c9;
+  background: var(--red-wash);
+  border: 1px solid var(--red-line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin: 16px 0 0;
+}
+.auth-error::before { content: "!"; font-weight: 600; color: var(--red); }
+
+.auth-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  font: inherit;
+  font-weight: 500;
+  color: #fff;
+  background: var(--red-deep);
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.08s ease;
+}
+.auth-btn:hover:not(:disabled) { background: var(--red-hover); }
+.auth-btn:active:not(:disabled) { transform: translateY(1px); }
+.auth-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.auth-btn:disabled { opacity: 0.55; cursor: default; }
+
+.auth-alt { margin: 18px 0 0; font-size: 0.86rem; color: var(--dim); text-align: center; }
+.auth-alt a { color: var(--red); text-decoration: none; font-weight: 500; }
+.auth-alt a:hover { text-decoration: underline; }
+
+/* Respect a reduced-motion preference: the transitions above are small, but
+   there is no reason to run them for someone who asked not to see motion. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ---- dashboard ----------------------------------------------------------- */
+.app-bar {
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--bg-lift);
+}
+.app-bar-in {
+  max-width: 52rem;
+  margin-inline: auto;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page { max-width: 52rem; margin-inline: auto; padding: 30px 18px 64px; }
+.page-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.page-title { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.page-sub { color: var(--dim); font-size: 0.88rem; margin: 5px 0 0; }
+
+.link-btn {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  color: var(--dim);
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.link-btn:hover { color: var(--red); border-color: var(--red-line); }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-top: 18px;
+}
+.card-title { font-size: 0.97rem; font-weight: 600; margin: 0 0 12px; }
+.card-note { color: var(--dim); font-size: 0.88rem; line-height: 1.55; margin: 0 0 12px; }
+
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 15px; margin: 0; }
+.kv dt { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mute); }
+.kv dd { margin: 4px 0 0; font-size: 0.92rem; }
+
+.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.accent { color: var(--red); }
+
+/* ---- morphing wireframe field --------------------------------------------
+   Sits behind the brand column. Positioned and masked so the solid never
+   reaches the form card: a wireframe moving behind a password field is the
+   kind of thing that looks good in a screenshot and is awful to type over.
+   --------------------------------------------------------------------------- */
+.morph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(46rem, 92vw);
+  height: min(46rem, 92vw);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* Deliberately faint. The mesh crosses body copy, and a backdrop that makes
+     a sentence harder to read has stopped being decoration. */
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(closest-side, #000 46%, transparent 86%);
+  mask-image: radial-gradient(closest-side, #000 46%, transparent 86%);
+}
+@media (min-width: 60rem) {
+  /* Pushed left and low, so its densest part sits in empty space rather than
+     behind the headline. */
+  .morph { left: 19%; top: 64%; width: 44rem; height: 44rem; }
+}
+/* On a phone it sits high up, behind the headline, out of the form's way. */
+@media (max-width: 59.99rem) {
+  .morph { top: 15rem; opacity: 0.5; }
+}
+
+/* ---- password reveal ------------------------------------------------------ */
+.pw { position: relative; display: block; }
+.pw input { padding-right: 44px; }
+
+.pw-eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--mute);
+  cursor: pointer;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+.pw-eye:hover { color: var(--red); background: var(--red-wash); }
+.pw-eye:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; color: var(--red); }
+.pw-eye[aria-pressed="true"] { color: var(--red); }
